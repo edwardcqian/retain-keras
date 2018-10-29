@@ -145,10 +145,12 @@ class SequenceBuilder(Sequence):
         return outputs
 
 
-def read_data(model_parameters, path_data, path_dictionary):
+def read_data(model_parameters, path_data, path_labels, path_dictionary):
     """Read the data from provided paths and assign it into lists"""
     data = pd.read_pickle(path_data)
     data_output = [data['codes'].values]
+
+    labels = pd.read_pickle(path_labels)
 
     if model_parameters.numeric_size:
         data_output.append(data['numerics'].values)
@@ -159,7 +161,7 @@ def read_data(model_parameters, path_data, path_dictionary):
         dictionary = pickle.load(f)
 
     dictionary[model_parameters.num_codes] = 'PADDING'
-    return data_output, dictionary
+    return data_output, labels, dictionary
 
 def get_importances(alphas, betas, patient_data, model_parameters, dictionary):
     """Construct dataframes that interpret each visit of the given patient"""
@@ -216,11 +218,29 @@ def main(ARGS):
     model, model_with_attention = import_model(ARGS.path_model)
     model_parameters = get_model_parameters(model)
     print('Reading Data')
-    data, dictionary = read_data(model_parameters, ARGS.path_data, ARGS.path_dictionary)
+    data, labels, dictionary = read_data(model_parameters, ARGS.path_data, ARGS.path_labels, ARGS.path_dictionary)
     data_generator = SequenceBuilder(data, model_parameters, ARGS)
     probabilities = get_predictions(model, data, model_parameters, ARGS)
     ARGS.batch_size = 1
     data_generator = SequenceBuilder(data, model_parameters, ARGS)
+    if len(ARGS.gen_all)>0:
+        all_df = pd.DataFrame()
+        for i in range(len(data[0])):
+            print(i,'of',len(data[0]),end='\r')
+            temp_df = pd.DataFrame()
+            patient_data = data_generator.__getitem__(i)
+            proba, alphas, betas = model_with_attention.predict_on_batch(patient_data)
+            visits = get_importances(alphas[0], betas[0], patient_data, model_parameters, dictionary)
+            for j, visit in enumerate(visits):
+                visit['visit'] = j
+                temp_df = temp_df.append(visit)
+            temp_df['id'] = i
+            temp_df['proba'] = proba[0,0,0]
+            temp_df['truth'] = labels[i]
+            all_df = all_df.append(temp_df)
+        all_df.to_csv(ARGS.gen_all,index=False)
+        return 0 
+            
     while 1:
         patient_id = int(input('Input Patient Order Number: '))
         if patient_id > len(data[0]) - 1:
@@ -244,10 +264,15 @@ def parse_arguments(parser):
                         help='Path to the model to evaluate')
     parser.add_argument('--path_data', type=str, default='data/data_test.pkl',
                         help='Path to evaluation data')
+    parser.add_argument('--path_labels', type=str, default='data/target_test.pkl',
+                        help='Path to evaluation data')
     parser.add_argument('--path_dictionary', type=str, default='data/dictionary.pkl',
                         help='Path to codes dictionary')
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Batch size for initial probability predictions')
+    parser.add_argument('--gen_all',
+                        type=str, default='',
+                        help='If argument present generate a csv file of all results to given path')
     # parser.add_argument('--id', type=int, default=0,
     #                     help='Id of the patient being interpreted')
     args = parser.parse_args()
