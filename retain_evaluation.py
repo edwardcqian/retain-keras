@@ -14,7 +14,8 @@ from keras.constraints import Constraint
 from keras.utils.data_utils import Sequence
 from keras_exp.multigpu import get_available_gpus, make_parallel
 
-def import_model(path):
+def import_model(ARGS):
+    path = ARGS.path_model
     """Import model from given path and assign it to appropriate devices"""
     K.clear_session()
     config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
@@ -23,7 +24,7 @@ def import_model(path):
     K.set_session(tfsess)
     model = load_model(path, custom_objects={'FreezePadding':FreezePadding,
                                              'FreezePadding_Non_Negative':FreezePadding_Non_Negative})
-    if len(get_available_gpus()) > 1:
+    if len(get_available_gpus()) > 1 and ARGS.multigpu :
         model = make_parallel(model)
     return model
 
@@ -244,7 +245,7 @@ def get_predictions(model, data, model_parameters, ARGS):
 def main(ARGS):
     """Main Body of the code"""
     print('Loading Model and Extracting Parameters')
-    model = import_model(ARGS.path_model)
+    model = import_model(ARGS)
     model_parameters = get_model_parameters(model)
     print('Reading Data')
     data, y = read_data(model_parameters, ARGS)
@@ -271,6 +272,8 @@ def parse_arguments(parser):
                         help='Maximum number of visits after which the data is truncated')
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Batch size for prediction (higher values are generally faster)')
+    parser.add_argument('--multigpu', action='store_true',
+                        help='If argument is present enable using mutiple gpu')
     args = parser.parse_args()
 
     return args

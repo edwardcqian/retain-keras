@@ -235,7 +235,7 @@ def model_create(ARGS):
     K.set_session(tfsess)
     #If there are multiple GPUs set up a multi-gpu model
     glist = get_available_gpus()
-    if len(glist) > 1:
+    if len(glist) > 1 and ARGS.multigpu:
         with tf.device('/cpu:0'):
             model = retain(ARGS)
         model_final = make_parallel(model, glist)
@@ -350,6 +350,8 @@ def parse_arguments(parser):
     parser.add_argument('--allow_negative', action='store_true',
                         help='If argument is present the negative weights for embeddings/attentions\
                          will be allowed (original RETAIN implementaiton)')
+    parser.add_argument('--multigpu', action='store_true',
+                        help='If argument is present enable using mutiple gpu')
     args = parser.parse_args()
 
     return args
