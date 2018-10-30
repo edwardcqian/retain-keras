@@ -281,10 +281,10 @@ def create_callbacks(model, data, ARGS):
                     append_write = 'w'
                 with open(self.filepath, append_write) as file_output:
                     file_output.write("\nEpoch: {:d}- ROC-AUC: {:.6f} ; PR-AUC: {:.6f}"\
-                            .format(epoch, score_roc, score_pr))
+                            .format(epoch+1, score_roc, score_pr))
 
                 print("\nEpoch: {:d} - ROC-AUC: {:.6f} PR-AUC: {:.6f}"\
-                      .format(epoch, score_roc, score_pr))
+                      .format(epoch+1, score_roc, score_pr))
 
 
     #Create callbacks
