@@ -67,6 +67,7 @@ retain_train.py has multiple arguments to customize the training and model:
 * `--l2`: Float L2 regularitzation value for layers. Default: 0.0
 * `--directory`: String Directory to save the model and the log file to. Default: 'Model' (directory needs to exist otherwise error will be thrown)
 * `--allow_negative`: Allows negative weights for embeddings/attentions (original RETAIN implementaiton allows it but forcing non-negative weights have shown to perform better on a range of tasks). Default: off
+* `--multigpu`: Enabel use of multigpu. Default: off
 
 ## Evaluation Arguments
 
@@ -79,6 +80,7 @@ retain_evaluation.py has some arguments:
 * `--omit_graphs`: Does not output graphs if argument is present. Default: (Graphs are output)
 * `--n_steps`: Integer Maximum number of visits after which the data is truncated. This features helps to conserve GPU Ram (only the most recent n_steps will be used). Default: 300
 * `--batch_size`: Batch size for prediction (higher values are generally faster). Default: 32
+* `--multigpu`: Enabel use of multigpu. Default: off
 
 ## Interpretation Arguments
 
@@ -89,6 +91,7 @@ retain_interpretations.py has some arguments:
 * `--path_data`: Path to evaluation data. Default: 'data/data_test.pkl'
 * `--path_dictionary`: Path to dictionary that maps code index to the specific alphanumeric value. If numerics inputs are used they should have indexes num_codes+1 through num_codes+numeric_size, num_codes index is reserved for padding.
 * `--batch_size`: Batch size for prediction (higher values are generally faster). Default: 32
+* `--gen_all`: Generate one report for all subjects instead of individually, and store it to the given path. Default: off
 
 # Data and Target Format
 
