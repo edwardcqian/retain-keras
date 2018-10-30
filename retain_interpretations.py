@@ -151,6 +151,7 @@ def read_data(model_parameters, path_data, path_labels, path_dictionary):
     data_output = [data['codes'].values]
 
     labels = pd.read_pickle(path_labels)
+    labels = labels['target'].values
 
     if model_parameters.numeric_size:
         data_output.append(data['numerics'].values)
