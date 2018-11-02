@@ -39,6 +39,10 @@ def convert_to_3digit_icd9(dx_str):
         else: return dx_str
 
 if __name__ == '__main__':
+    if len(sys.argv) != 7:
+        print('Usage: python process_mimic_modified.py <admission> <diagnoses_icd> <labevents> <patient> <out_dir> <train_percentage>')
+        sys.exit()
+
     admission_file = sys.argv[1]
     diagnosis_file = sys.argv[2]
     patients_file = sys.argv[3]
@@ -110,7 +114,7 @@ if __name__ == '__main__':
 
         val_lab = tokens[3]
 
-        if adm_id in adm_dx_map:
+        if adm_id in adm_lab_map:
             adm_lab_map[adm_id].append(val_lab)
         else:
             adm_lab_map[adm_id] = [val_lab]
