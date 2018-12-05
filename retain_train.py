@@ -22,6 +22,10 @@ class SequenceBuilder(Sequence):
         #Receive all appropriate data
         self.codes = data[0]
         index = 1
+        if ARGS.weighted:
+            self.weights = data[index]
+            index += 1
+
         if ARGS.numeric_size:
             self.numeric = data[index]
             index += 1
@@ -34,6 +38,7 @@ class SequenceBuilder(Sequence):
         self.batch_size = batch_size
         self.target_out = target_out
         self.numeric_size = ARGS.numeric_size
+        self.weighted = ARGS.weighted
         self.use_time = ARGS.use_time
         self.n_steps = ARGS.n_steps
         #self.balance = (1-(float(sum(target))/len(target)))/(float(sum(target))/len(target))
@@ -69,6 +74,11 @@ class SequenceBuilder(Sequence):
         #Pad data
         x_codes = pad_data(x_codes, pad_length_visits, pad_length_codes, self.num_codes)
         outputs = [x_codes]
+        # weighted
+        if self.weighted:
+            x_weighted = self.weights[batch_slice]
+            x_weighted = pad_data(x_weighted, pad_length_visits, pad_length_codes, self.num_codes)
+            outputs.append(x_weighted)
         #Add numeric data if necessary
         if self.numeric_size:
             x_numeric = self.numeric[batch_slice]
@@ -117,6 +127,10 @@ def read_data(ARGS):
     data_output_train = [data_train_df['codes'].values]
     data_output_test = [data_test_df['codes'].values]
 
+    if ARGS.weighted:
+        data_output_train.append(data_train_df['values'].values)
+        data_output_test.append(data_test_df['values'].values)
+
     if ARGS.numeric_size:
         data_output_train.append(data_train_df['numerics'].values)
         data_output_test.append(data_test_df['numerics'].values)
@@ -158,6 +172,11 @@ def model_create(ARGS):
                                        ARGS.emb_size,
                                        name='embedding',
                                        embeddings_constraint=embeddings_constraint)(codes)
+        if ARGS.weighted:
+            weights = L.Input((None, None), name='codes_input')
+            inputs_list.append(weights)
+            expanded_weights = K.expand_dims(weights, axis=3)
+            codes_embs_total = L.Lambda(lambda x: x * expanded_weights)(codes_embs_total)
         codes_embs = L.Lambda(lambda x: K.sum(x, axis=2))(codes_embs_total)
         #Numeric input if needed
         if ARGS.numeric_size:
@@ -299,7 +318,7 @@ def train_model(model, data_train, y_train, data_test, y_test, ARGS):
                                       batch_size=ARGS.batch_size, ARGS=ARGS)
     model.fit_generator(generator=train_generator, epochs=ARGS.epochs,
                         max_queue_size=15, use_multiprocessing=True,
-                        callbacks=[checkpoint, log], verbose=1, workers=3, initial_epoch=0)
+                        callbacks=[log], verbose=1, workers=3, initial_epoch=0)
 
 def main(ARGS):
     """Main function"""
